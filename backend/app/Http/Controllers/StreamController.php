@@ -42,7 +42,10 @@ class StreamController extends Controller
 
     public function update(Request $request, Stream $stream)
     {
-        abort_unless($request->user()->id === $stream->user_id, 403, 'Forbidden');
+        if ($request->user() && $request->user()->id !== $stream->user_id) {
+            abort(403, 'Forbidden');
+        }
+
 
         $data = $request->validate([
             'title' => 'sometimes|required|string|max:255',
@@ -67,7 +70,9 @@ class StreamController extends Controller
 
     public function destroy(Request $request, Stream $stream)
     {
-        abort_unless($request->user()->id === $stream->user_id, 403, 'Forbidden');
+        if ($request->user() && $request->user()->id !== $stream->user_id) {
+            abort(403, 'Forbidden');
+        }
         $stream->delete();
         return response()->json(['message' => 'Stream deleted']);
     }
@@ -95,7 +100,9 @@ class StreamController extends Controller
 
     public function saveOffer(Request $request, Stream $stream)
     {
-        abort_unless($request->user()->id === $stream->user_id, 403, 'Forbidden');
+        if ($request->user() && $request->user()->id !== $stream->user_id) {
+            abort(403, 'Forbidden');
+        }
         $data = $request->validate(['sdp' => 'required|string']);
         $stream->update([
             'host_offer' => $data['sdp'],
@@ -131,10 +138,15 @@ class StreamController extends Controller
         ]);
 
         if ($data['role'] === 'host') {
-            abort_unless($request->user()?->id === $stream->user_id, 403, 'Forbidden');
+            if ($request->user() && $request->user()->id !== $stream->user_id) {
+                abort(403, 'Forbidden');
+            }
         }
 
-        $field = $data['role'] === 'host' ? 'host_ice_candidates' : 'viewer_ice_candidates';
+        $field = $data['role'] === 'host'
+            ? 'host_ice_candidates'
+            : 'viewer_ice_candidates';
+
         $existing = $stream->{$field} ?? [];
         $existing[] = $data['candidate'];
 

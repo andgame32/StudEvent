@@ -16,6 +16,7 @@ Route::get('/streams/{stream}', [StreamController::class, 'show']);
 Route::get('/streams/{stream}/signal/offer', [StreamController::class, 'getOffer']);
 Route::get('/streams/{stream}/signal/answer', [StreamController::class, 'getAnswer']);
 Route::get('/streams/{stream}/signal/candidates', [StreamController::class, 'getCandidates']);
+Route::post('/streams/{stream}/signal/offer', [StreamController::class, 'saveOffer']);
 Route::post('/streams/{stream}/signal/answer', [StreamController::class, 'saveAnswer']);
 Route::post('/streams/{stream}/signal/candidates', [StreamController::class, 'addCandidate']);
 Route::get('/streams/{stream}/messages', [ChatController::class, 'index']);
@@ -27,7 +28,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/streams', [StreamController::class, 'store']);
     Route::put('/streams/{stream}', [StreamController::class, 'update']);
     Route::delete('/streams/{stream}', [StreamController::class, 'destroy']);
-    Route::post('/streams/{stream}/signal/offer', [StreamController::class, 'saveOffer']);
     Route::post('/streams/{stream}/messages', [ChatController::class, 'store']);
     Route::get('/related-accounts', [RelatedAccountController::class, 'index']);
     Route::post('/related-accounts', [RelatedAccountController::class, 'store']);
