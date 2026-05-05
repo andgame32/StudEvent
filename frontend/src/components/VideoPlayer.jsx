@@ -4,6 +4,19 @@ import { useSettings } from '../settings'
 
 const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
 
+function normalizeSdp(rawSdp) {
+  if (!rawSdp || typeof rawSdp !== 'string') return ''
+
+  const normalized = rawSdp
+    .replace(/\r?\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('\r\n')
+
+  return normalized.endsWith('\r\n') ? normalized : `${normalized}\r\n`
+}
+
 export default function VideoPlayer({ streamId, isHost, isEnded = false }) {
   const localRef = useRef(null)
   const remoteRef = useRef(null)
@@ -49,13 +62,17 @@ export default function VideoPlayer({ streamId, isHost, isEnded = false }) {
 
     const offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
-    await api(`/streams/${streamId}/signal/offer`, { method: 'POST', body: JSON.stringify({ sdp: offer.sdp }) })
+    await api(`/streams/${streamId}/signal/offer`, {
+      method: 'POST',
+      body: JSON.stringify({ sdp: normalizeSdp(pc.localDescription?.sdp || offer.sdp) }),
+    })
+
 
     const stopPoll = await pollCandidates('viewer')
     const answerLoop = setInterval(async () => {
       const answerData = await api(`/streams/${streamId}/signal/answer`)
       if (answerData.sdp) {
-        await pc.setRemoteDescription({ type: 'answer', sdp: answerData.sdp })
+        await pc.setRemoteDescription({ type: 'answer', sdp: normalizeSdp(answerData.sdp) })
         clearInterval(answerLoop)
         setStarted(true)
       }
@@ -85,10 +102,13 @@ export default function VideoPlayer({ streamId, isHost, isEnded = false }) {
 
     const offerData = await api(`/streams/${streamId}/signal/offer`)
     if (!offerData.sdp) return
-    await pc.setRemoteDescription({ type: 'offer', sdp: offerData.sdp })
+    await pc.setRemoteDescription({ type: 'offer', sdp: normalizeSdp(offerData.sdp) })
     const answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
-    await api(`/streams/${streamId}/signal/answer`, { method: 'POST', body: JSON.stringify({ sdp: answer.sdp }) })
+    await api(`/streams/${streamId}/signal/answer`, {
+      method: 'POST',
+      body: JSON.stringify({ sdp: normalizeSdp(pc.localDescription?.sdp || answer.sdp) }),
+    })
     await pollCandidates('host')
     setStarted(true)
   }
