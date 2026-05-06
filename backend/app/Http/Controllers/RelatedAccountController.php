@@ -8,7 +8,7 @@ class RelatedAccountController extends Controller
 {
     public function index(Request $request)
     {
-        return $request->user()
+        return $this->authUser($request)
             ->relatedAccounts()
             ->latest()
             ->limit(3)
@@ -22,7 +22,7 @@ class RelatedAccountController extends Controller
             'role' => 'nullable|string|max:255',
         ]);
 
-        $account = $request->user()->relatedAccounts()->create($data);
+        $account = $this->authUser($request)->relatedAccounts()->create($data);
 
         return response()->json($account, 201);
     }

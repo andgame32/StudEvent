@@ -32,6 +32,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
+            'is_blocked' => 'boolean',
         ];
     }
 
@@ -57,5 +59,6 @@ class User extends Authenticatable
         }
 
         return Storage::url($this->avatar_path);
+
     }
 }

@@ -49,13 +49,13 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()?->currentAccessToken()?->delete();
+        $this->authUser($request)->currentAccessToken()?->delete();
         return response()->json(['message' => 'Logged out']);
     }
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json($this->authUser($request));
     }
 
     public function updateProfile(Request $request)
@@ -64,7 +64,7 @@ class AuthController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'avatar' => 'nullable|image|max:4096',
         ]);
-        $user = $request->user();
+        $user = $this->authUser($request);
         if ($request->hasFile('avatar')) {
             if ($user->avatar_path) {
                 Storage::disk('public')->delete($user->avatar_path);

@@ -35,12 +35,13 @@ class StreamController extends Controller
 
     public function my(Request $request)
     {
-        return $request->user()->streams()->orderByDesc('created_at')->get();
+        return $this->authUser($request)->streams()->orderByDesc('created_at')->get();
     }
 
     public function store(Request $request): JsonResponse
     {
-        abort_if($request->user()?->is_blocked, 403, 'Blocked users cannot stream');
+        $user = $this->authUser($request);
+        abort_if($user->is_blocked, 403, 'Blocked users cannot stream');
 
         $data = $request->validate([
             'title' => 'required|string|max:255',
@@ -55,7 +56,7 @@ class StreamController extends Controller
         }
         unset($data['preview']);
 
-        $stream = $request->user()->streams()->create($data);
+        $stream = $user->streams()->create($data);
 
         return response()->json($stream->load('user:id,name,avatar_path'), 201);
     }
@@ -67,7 +68,7 @@ class StreamController extends Controller
 
     public function update(Request $request, Stream $stream): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->authUser($request);
         if ($user && !$user->is_admin && $user->id !== $stream->user_id) {
             abort(403, 'Forbidden');
         }
@@ -95,7 +96,7 @@ class StreamController extends Controller
 
     public function destroy(Request $request, Stream $stream): JsonResponse
     {
-        if ($request->user() && $request->user()->id !== $stream->user_id) {
+        if ($this->authUser($request)->id !== $stream->user_id) {
             abort(403, 'Forbidden');
         }
 
@@ -109,7 +110,7 @@ class StreamController extends Controller
         $data = $request->validate(['reaction' => 'required|in:like,dislike']);
 
         StreamReaction::updateOrCreate(
-            ['stream_id' => $stream->id, 'user_id' => $request->user()->id],
+            ['stream_id' => $stream->id, 'user_id' => $this->authUser($request)->id],
             ['reaction' => $data['reaction']]
         );
 
@@ -118,7 +119,7 @@ class StreamController extends Controller
 
     public function saveOffer(Request $request, Stream $stream): JsonResponse
     {
-        if ($request->user() && $request->user()->id !== $stream->user_id) {
+        if ($this->authUser($request)->id !== $stream->user_id) {
             abort(403, 'Forbidden');
         }
 
@@ -159,7 +160,7 @@ class StreamController extends Controller
             'candidate' => 'required|array',
         ]);
 
-        if ($data['role'] === 'host' && $request->user() && $request->user()->id !== $stream->user_id) {
+        if ($data['role'] === 'host' && $this->authUser($request)->id !== $stream->user_id) {
             abort(403, 'Forbidden');
         }
 

@@ -22,11 +22,12 @@ class ChatController extends Controller
 
     public function store(Request $request, Stream $stream)
     {
-        abort_if($request->user()?->is_blocked, 403, 'Blocked users cannot chat');
+        $user = $this->authUser($request);
+        abort_if($user->is_blocked, 403, 'Blocked users cannot chat');
         $data = $request->validate(['text' => 'required|string|max:1000']);
 
         $message = $stream->messages()->create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'text' => $data['text'],
         ]);
 

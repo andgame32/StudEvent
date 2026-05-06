@@ -12,7 +12,7 @@ class AdminController extends Controller
 {
     protected function ensureAdmin(Request $request): void
     {
-        abort_unless($request->user()?->is_admin, 403, 'Admin only');
+        abort_unless($this->authUser($request)->is_admin, 403, 'Admin only');
     }
 
     public function users(Request $request)
