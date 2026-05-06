@@ -9,7 +9,7 @@ abstract class Controller
 {
     protected function authUser(Request $request): User
     {
-        $user = $request->user();
+        $user = $request->user('sanctum') ?? $request->user();
 
         abort_unless($user instanceof User, 401, 'Unauthenticated');
 

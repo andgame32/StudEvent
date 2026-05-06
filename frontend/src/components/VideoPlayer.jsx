@@ -45,7 +45,7 @@ export default function VideoPlayer({ streamId, isHost, isEnded = false }) {
   }
 
   async function startHost() {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
     localRef.current.srcObject = stream
     const pc = new RTCPeerConnection(rtcConfig)
     peerRef.current = pc
