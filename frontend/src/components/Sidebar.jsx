@@ -65,6 +65,7 @@ export default function Sidebar() {
         <Link to="/streams/create">{t('createStream')}</Link>
         <Link to="/profile">{t('profile')}</Link>
         <Link to="/settings">{t('settings')}</Link>
+        {user?.is_admin && <Link to="/admin">Админ</Link>}
       </nav>
       <button className="logout-btn" onClick={handleLogout}>{t('logout')}</button>
     </aside>

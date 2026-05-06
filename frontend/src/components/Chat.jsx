@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api, toAbsoluteUrl } from '../api'
 
 export default function Chat({ streamId }) {
   const [messages, setMessages] = useState([])
@@ -39,7 +39,7 @@ export default function Chat({ streamId }) {
       <h3>Чат</h3>
       <div className="chat-messages">
         {messages.map((m) => (
-          <p key={m.id}><b>{m.user?.name || 'User'}:</b> {m.text}</p>
+          <p key={m.id}><img src={m.user?.avatar_url ? toAbsoluteUrl(m.user.avatar_url) : 'https://placehold.co/24x24'} alt="" width="24" height="24" style={{borderRadius:'50%',verticalAlign:'middle',marginRight:6}} /><b>{m.user?.name || 'User'}:</b> {m.text}</p>
         ))}
       </div>
       <form onSubmit={sendMessage}>

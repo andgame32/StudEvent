@@ -6,6 +6,7 @@ export default function ProfilePage() {
   const [accounts, setAccounts] = useState([])
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
+  const [avatar, setAvatar] = useState(null)
 
   useEffect(() => {
     api('/me')
@@ -29,12 +30,16 @@ export default function ProfilePage() {
     setRole('')
   }
 
+  async function uploadAvatar(e){e.preventDefault(); const fd=new FormData(); if (avatar) fd.append('avatar',avatar); const updated=await api('/me',{method:'PUT',body:fd}); setUser(updated); setCurrentUser(updated)}
+
   if (!user) return <p>Войдите, чтобы увидеть профиль.</p>
   return (
     <div>
       <h1>Профиль</h1>
       <p>Имя: {user.name}</p>
       <p>Email: {user.email}</p>
+      {user.avatar_url && <img src={user.avatar_url} alt="avatar" width="80" height="80" />}
+      <form onSubmit={uploadAvatar}><input type="file" accept="image/*" onChange={(e)=>setAvatar(e.target.files?.[0] || null)} /><button type="submit">Сохранить аватар</button></form>
       <h2>Связанные аккаунты (до 3 в sidebar)</h2>
       {accounts.map((acc) => <p key={acc.id}>{acc.name} - {acc.role || 'Участник'}</p>)}
       <form onSubmit={addAccount}>

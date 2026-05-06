@@ -11,6 +11,7 @@ import RegisterPage from './pages/RegisterPage'
 import SettingsPage from './pages/SettingsPage'
 import StreamPage from './pages/StreamPage'
 import StreamsListPage from './pages/StreamsListPage'
+import AdminPage from './pages/AdminPage'
 
 function AppLayout({ children }) {
   return (
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="/" element={<AppLayout><HomePage /></AppLayout>} />
       <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
       <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
+      <Route path="/admin" element={<AppLayout><AdminPage /></AppLayout>} />
       <Route path="/streams" element={<AppLayout><StreamsListPage /></AppLayout>} />
       <Route path="/my-streams" element={<AppLayout><MyStreamsPage /></AppLayout>} />
       <Route path="/streams/create" element={<AppLayout><CreateStreamPage /></AppLayout>} />

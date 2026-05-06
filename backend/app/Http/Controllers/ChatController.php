@@ -12,7 +12,7 @@ class ChatController extends Controller
         $sinceId = (int) $request->query('since_id', 0);
 
         $messages = $stream->messages()
-            ->with('user:id,name')
+            ->with('user:id,name,avatar_path')
             ->where('id', '>', $sinceId)
             ->orderBy('id')
             ->get();
@@ -22,15 +22,14 @@ class ChatController extends Controller
 
     public function store(Request $request, Stream $stream)
     {
-        $data = $request->validate([
-            'text' => 'required|string|max:1000',
-        ]);
+        abort_if($request->user()?->is_blocked, 403, 'Blocked users cannot chat');
+        $data = $request->validate(['text' => 'required|string|max:1000']);
 
         $message = $stream->messages()->create([
             'user_id' => $request->user()->id,
             'text' => $data['text'],
         ]);
 
-        return response()->json($message->load('user:id,name'), 201);
+        return response()->json($message->load('user:id,name,avatar_path'), 201);
     }
 }

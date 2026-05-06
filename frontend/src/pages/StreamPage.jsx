@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api } from '../api'
+import { api, toAbsoluteUrl } from '../api'
 import Chat from '../components/Chat'
 import VideoPlayer from '../components/VideoPlayer'
 import { useSettings } from '../settings'
@@ -31,7 +31,8 @@ export default function StreamPage() {
   return (
     <div>
       <h1>{stream.title}</h1>
-      {stream.preview_url && <img className="stream-preview" src={stream.preview_url} alt={stream.title} />}
+      {stream.preview_url && <img className="stream-preview" src={toAbsoluteUrl(stream.preview_url)} alt={stream.title} />}
+      <div className="row-actions"><button onClick={() => api(`/streams/${id}/react`, {method:'POST', body: JSON.stringify({reaction:'like'})}).then(setStream)}>👍 {stream.likes_count || 0}</button><button onClick={() => api(`/streams/${id}/react`, {method:'POST', body: JSON.stringify({reaction:'dislike'})}).then(setStream)}>👎 {stream.dislikes_count || 0}</button></div>
       <p>{stream.description}</p>
       <p>Статус: {stream.status}</p>
       <p>{stream.status === 'ended' ? t('streamEnded') : isHost ? t('streamStartHint') : t('streamWatchHint')}</p>

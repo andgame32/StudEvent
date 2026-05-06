@@ -52,3 +52,11 @@ export async function api(path, options = {}) {
   }
   return data
 }
+
+export function toAbsoluteUrl(url) {
+  if (!url) return null
+  if (/^https?:\/\//.test(url)) return url
+  const base = import.meta.env.VITE_BACKEND_ORIGIN || window.location.origin
+  return new URL(url, base).toString()
+}
+
