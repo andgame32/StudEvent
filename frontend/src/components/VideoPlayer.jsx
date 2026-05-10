@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api'
 import { useSettings } from '../settings'
 
@@ -8,31 +8,78 @@ const normalizeSdp = (rawSdp) => (rawSdp || '').replace(/\r?\n/g, '\n').split('\
 export default function VideoPlayer({ streamId, isHost, isEnded = false }) {
   const localRef = useRef(null)
   const remoteRef = useRef(null)
-  const peerRef = useRef(null)
+  const hostPeersRef = useRef(new Map())
+  const viewerPeerRef = useRef(null)
   const pollRef = useRef(null)
   const [started, setStarted] = useState(false)
   const [error, setError] = useState('')
   const [paused, setPaused] = useState(false)
   const { t } = useSettings()
+  const viewerId = useMemo(() => crypto.randomUUID(), [streamId])
 
   useEffect(() => () => {
     if (pollRef.current) clearInterval(pollRef.current)
-    peerRef.current?.close()
+    hostPeersRef.current.forEach((pc) => pc.close())
+    viewerPeerRef.current?.close()
   }, [])
 
-  async function pollSignals(pc) {
-    if (!pc || pc.connectionState === 'closed') return
-    if (isHost && !pc.currentRemoteDescription) {
-      const answerData = await api(`/streams/${streamId}/signal/answer`).catch(() => null)
-      if (answerData?.sdp) await pc.setRemoteDescription({ type: 'answer', sdp: normalizeSdp(answerData.sdp) })
+  async function startHost() {
+    const media = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+    localRef.current.srcObject = media
+    const tracks = media.getTracks()
+
+    async function processOffers() {
+      const data = await api(`/streams/${streamId}/signal/answer`).catch(() => ({ offers: {} }))
+      const offers = data?.offers || {}
+      for (const [incomingViewerId, sdp] of Object.entries(offers)) {
+        if (!sdp || hostPeersRef.current.has(incomingViewerId)) continue
+        const pc = new RTCPeerConnection(rtcConfig)
+        hostPeersRef.current.set(incomingViewerId, pc)
+        tracks.forEach((track) => pc.addTrack(track, media))
+        pc.onicecandidate = (event) => event.candidate && api(`/streams/${streamId}/signal/candidates`, { method: 'POST', body: JSON.stringify({ role: 'host', viewer_id: incomingViewerId, candidate: event.candidate }) })
+        await pc.setRemoteDescription({ type: 'offer', sdp: normalizeSdp(sdp) })
+        const answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        await api(`/streams/${streamId}/signal/offer`, { method: 'POST', body: JSON.stringify({ viewer_id: incomingViewerId, sdp: normalizeSdp(pc.localDescription?.sdp || answer.sdp) }) })
+      }
+
+      for (const [connectedViewerId, pc] of hostPeersRef.current.entries()) {
+        const c = await api(`/streams/${streamId}/signal/candidates?role=viewer&viewer_id=${connectedViewerId}`).catch(() => ({ candidates: [] }))
+        for (const candidate of c?.candidates || []) {
+          try { await pc.addIceCandidate(candidate) } catch {}
+        }
+      }
     }
 
-    const incomingRole = isHost ? 'viewer' : 'host'
-    const candidatesData = await api(`/streams/${streamId}/signal/candidates?role=${incomingRole}`).catch(() => ({ candidates: [] }))
-    const candidates = candidatesData?.candidates || []
-    for (const candidate of candidates) {
-      try { await pc.addIceCandidate(candidate) } catch {}
+    await processOffers()
+    pollRef.current = setInterval(processOffers, 1000)
+  }
+
+  async function startViewer() {
+    const pc = new RTCPeerConnection(rtcConfig)
+    viewerPeerRef.current = pc
+    pc.addTransceiver('video', { direction: 'recvonly' })
+    pc.addTransceiver('audio', { direction: 'recvonly' })
+    pc.ontrack = (event) => { if (remoteRef.current) remoteRef.current.srcObject = event.streams[0] }
+    pc.onicecandidate = (event) => event.candidate && api(`/streams/${streamId}/signal/candidates`, { method: 'POST', body: JSON.stringify({ role: 'viewer', viewer_id: viewerId, candidate: event.candidate }) })
+
+    const offer = await pc.createOffer()
+    await pc.setLocalDescription(offer)
+    await api(`/streams/${streamId}/signal/answer`, { method: 'POST', body: JSON.stringify({ viewer_id: viewerId, sdp: normalizeSdp(pc.localDescription?.sdp || offer.sdp) }) })
+
+    async function pollAnswer() {
+      const answerData = await api(`/streams/${streamId}/signal/offer?viewer_id=${viewerId}`).catch(() => ({ sdp: null }))
+      if (answerData?.sdp && !pc.currentRemoteDescription) {
+        await pc.setRemoteDescription({ type: 'answer', sdp: normalizeSdp(answerData.sdp) })
+      }
+      const c = await api(`/streams/${streamId}/signal/candidates?role=host&viewer_id=${viewerId}`).catch(() => ({ candidates: [] }))
+      for (const candidate of c?.candidates || []) {
+        try { await pc.addIceCandidate(candidate) } catch {}
+      }
     }
+
+    await pollAnswer()
+    pollRef.current = setInterval(pollAnswer, 1000)
   }
 
   async function start() {
@@ -40,35 +87,7 @@ export default function VideoPlayer({ streamId, isHost, isEnded = false }) {
     setError('')
     try {
       if (pollRef.current) clearInterval(pollRef.current)
-      peerRef.current?.close()
-      const pc = new RTCPeerConnection(rtcConfig)
-      peerRef.current = pc
-
-      if (isHost) {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-        localRef.current.srcObject = stream
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream))
-      } else {
-        pc.ontrack = (event) => { if (remoteRef.current) remoteRef.current.srcObject = event.streams[0] }
-      }
-
-      pc.onicecandidate = (event) => event.candidate && api(`/streams/${streamId}/signal/candidates`, { method: 'POST', body: JSON.stringify({ role: isHost ? 'host' : 'viewer', candidate: event.candidate }) })
-
-      if (isHost) {
-        const offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
-        await api(`/streams/${streamId}/signal/offer`, { method: 'POST', body: JSON.stringify({ sdp: normalizeSdp(pc.localDescription?.sdp || offer.sdp) }) })
-      } else {
-        const offerData = await api(`/streams/${streamId}/signal/offer`)
-        if (!offerData.sdp) throw new Error('Трансляция ещё не запущена ведущим')
-        await pc.setRemoteDescription({ type: 'offer', sdp: normalizeSdp(offerData.sdp) })
-        const answer = await pc.createAnswer()
-        await pc.setLocalDescription(answer)
-        await api(`/streams/${streamId}/signal/answer`, { method: 'POST', body: JSON.stringify({ sdp: normalizeSdp(pc.localDescription?.sdp || answer.sdp) }) })
-      }
-
-      await pollSignals(pc)
-      pollRef.current = setInterval(() => pollSignals(pc), 1200)
+      isHost ? await startHost() : await startViewer()
       setStarted(true)
     } catch (e) { setError(e.message || t('streamStartError')) }
   }
@@ -80,10 +99,5 @@ export default function VideoPlayer({ streamId, isHost, isEnded = false }) {
     setPaused(!paused)
   }
 
-  function makeFullscreen() {
-    const el = isHost ? localRef.current : remoteRef.current
-    if (el?.requestFullscreen) el.requestFullscreen()
-  }
-
-  return <section className="video-player">{!isEnded && <button onClick={start}>{started ? t('reconnect') : isHost ? t('startLive') : t('connect')}</button>}{!isHost && started && <button onClick={togglePauseViewer}>{paused ? 'Возобновить для меня' : 'Пауза для меня'}</button>}<button onClick={makeFullscreen}>Полный экран</button>{error && <p className="error-text">{error}</p>}{isHost && <video ref={localRef} autoPlay muted playsInline className="video" />}<video ref={remoteRef} autoPlay playsInline className="video" /></section>
+  return <section className="video-player">{!isEnded && <button onClick={start}>{started ? t('reconnect') : isHost ? t('startLive') : t('connect')}</button>}{!isHost && started && <button onClick={togglePauseViewer}>{paused ? 'Возобновить для меня' : 'Пауза для меня'}</button>}{error && <p className="error-text">{error}</p>}{isHost && <video ref={localRef} autoPlay muted playsInline className="video" />}<video ref={remoteRef} autoPlay playsInline className="video" /></section>
 }

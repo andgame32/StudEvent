@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\Storage;
 
 class StreamController extends Controller
 {
+    private function signalMap($value): array
+    {
+        if (is_array($value)) return $value;
+        if (!$value) return [];
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : [];
+    }
     public function index()
     {
         return Stream::with('user:id,name,avatar_path')
@@ -123,40 +130,60 @@ class StreamController extends Controller
             abort(403, 'Forbidden');
         }
 
-        $data = $request->validate(['sdp' => 'required|string']);
+        $data = $request->validate([
+            'viewer_id' => 'required|string|max:128',
+            'sdp' => 'required|string',
+        ]);
+
+        $answers = $this->signalMap($stream->host_offer);
+        $answers[$data['viewer_id']] = $data['sdp'];
 
         $stream->update([
-            'host_offer' => $data['sdp'],
-            'viewer_answer' => null,
-            'viewer_ice_candidates' => [],
+            'host_offer' => json_encode($answers),
             'status' => 'live',
         ]);
 
         return response()->json(['message' => 'Offer saved']);
     }
 
-    public function getOffer(Stream $stream): JsonResponse
+    public function getOffer(Request $request, Stream $stream): JsonResponse
     {
-        return response()->json(['sdp' => $stream->host_offer]);
+        $viewerId = (string) $request->query('viewer_id', '');
+        $answers = $this->signalMap($stream->host_offer);
+        return response()->json(['sdp' => $viewerId ? ($answers[$viewerId] ?? null) : null]);
     }
 
     public function saveAnswer(Request $request, Stream $stream): JsonResponse
     {
-        $data = $request->validate(['sdp' => 'required|string']);
-        $stream->update(['viewer_answer' => $data['sdp']]);
+        $data = $request->validate([
+            'viewer_id' => 'required|string|max:128',
+            'sdp' => 'required|string',
+        ]);
+        $offers = $this->signalMap($stream->viewer_answer);
+        $offers[$data['viewer_id']] = $data['sdp'];
+        $stream->update(['viewer_answer' => json_encode($offers)]);
 
         return response()->json(['message' => 'Answer saved']);
     }
 
-    public function getAnswer(Stream $stream): JsonResponse
+    public function getAnswer(Request $request, Stream $stream): JsonResponse
     {
-        return response()->json(['sdp' => $stream->viewer_answer]);
+        $viewerId = (string) $request->query('viewer_id', '');
+        $offers = $this->signalMap($stream->viewer_answer);
+        if (!$viewerId) return response()->json(['offers' => $offers]);
+        $sdp = $offers[$viewerId] ?? null;
+        if ($sdp) {
+            unset($offers[$viewerId]);
+            $stream->update(['viewer_answer' => json_encode($offers)]);
+        }
+        return response()->json(['sdp' => $sdp]);
     }
 
     public function addCandidate(Request $request, Stream $stream): JsonResponse
     {
         $data = $request->validate([
             'role' => 'required|in:host,viewer',
+            'viewer_id' => 'required|string|max:128',
             'candidate' => 'required|array',
         ]);
 
@@ -165,10 +192,12 @@ class StreamController extends Controller
         }
 
         $field = $data['role'] === 'host' ? 'host_ice_candidates' : 'viewer_ice_candidates';
-        $existing = $stream->{$field} ?? [];
-        $existing[] = $data['candidate'];
+        $existing = $this->signalMap($stream->{$field});
+        $viewerId = $data['viewer_id'];
+        $existing[$viewerId] = $existing[$viewerId] ?? [];
+        $existing[$viewerId][] = $data['candidate'];
 
-        $stream->update([$field => $existing]);
+        $stream->update([$field => json_encode($existing)]);
 
         return response()->json(['message' => 'Candidate added']);
     }
@@ -176,11 +205,14 @@ class StreamController extends Controller
     public function getCandidates(Request $request, Stream $stream): JsonResponse
     {
         $role = $request->query('role', 'viewer');
+        $viewerId = (string) $request->query('viewer_id', '');
         $field = $role === 'host' ? 'host_ice_candidates' : 'viewer_ice_candidates';
-        $candidates = $stream->{$field} ?? [];
+        $existing = $this->signalMap($stream->{$field});
+        $candidates = $viewerId ? ($existing[$viewerId] ?? []) : [];
 
-        if (!empty($candidates)) {
-            $stream->update([$field => []]);
+        if ($viewerId && !empty($candidates)) {
+            $existing[$viewerId] = [];
+            $stream->update([$field => json_encode($existing)]);
         }
 
         return response()->json(['candidates' => $candidates]);
