@@ -14,8 +14,10 @@ class FriendController extends Controller
         $user = $this->authUser($request);
         $data = $request->validate(['query' => 'required|string|max:255']);
 
-        $friend = User::where('email', $data['query'])
-            ->orWhere('name', $data['query'])
+        $query = trim($data['query']);
+        $friend = User::where('email', 'like', "%{$query}%")
+            ->orWhere('name', 'like', "%{$query}%")
+            ->orderByRaw("CASE WHEN email = ? OR name = ? THEN 0 ELSE 1 END", [$query, $query])
             ->firstOrFail();
 
         abort_if($friend->id === $user->id, 422, 'Нельзя добавить себя в друзья.');

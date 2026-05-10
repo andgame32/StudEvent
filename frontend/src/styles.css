@@ -12,3 +12,11 @@ button { cursor: pointer; background: #1b26d9; color: #fff; border: none; }
 .ended-banner { background: #ffe8e8; color: #ab1111; border: 1px solid #f3b8b8; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 @media (max-width: 900px) { .app-shell { flex-direction: column; } .sidebar { width: 100%; } .grid { grid-template-columns: 1fr; } }
+
+.sidebar { flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.sidebar-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sidebar-nav a { background: rgba(255,255,255,0.12); border-radius: 8px; padding: 8px; text-align: center; }
+.sidebar-nav .sidebar-link-wide { grid-column: 1 / -1; }
+.stream-thumb-image, .stream-preview, .video { width: 100%; max-width: 1280px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; background: #111; }
+.video-player { display: flex; flex-direction: column; gap: 8px; }
+.video-player button { max-width: 260px; }
