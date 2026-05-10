@@ -65,7 +65,7 @@ class Stream extends Model
             return null;
         }
 
-        return Storage::url($this->preview_path);
+        return '/api/media/previews/'.basename($this->preview_path);
     }
 }
 

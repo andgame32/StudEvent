@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api, clearCurrentUser, clearToken, getCurrentUser, setCurrentUser, toAbsoluteUrl } from '../api'
+import { api, clearCurrentUser, clearToken, getCurrentUser, getMediaUrl, setCurrentUser } from '../api'
 import { useSettings } from '../settings'
 
 export default function Sidebar() {
@@ -44,7 +44,7 @@ export default function Sidebar() {
       
       {user && (
         <div className="sidebar-profile">
-          <img className="avatar-dot" src={user.avatar_url ? toAbsoluteUrl(user.avatar_url) : 'https://placehold.co/26x26'} alt="avatar" />
+          <img className="avatar-dot" src={getMediaUrl(user.avatar_url, '/images/default-avatar.svg')} alt="avatar" />
           <div className="profile-info">
             <strong className={user.role === 'teacher' ? 'teacher-name' : ''}>
               {user.name}
@@ -64,7 +64,7 @@ export default function Sidebar() {
           <div className="related-accounts">
             {sorted.slice(0, 3).map((account) => (
               <div className="related-account" key={account.id}>
-                <img className="avatar-dot" src={account.avatar_url ? toAbsoluteUrl(account.avatar_url) : 'https://placehold.co/26x26'} alt={account.name} />
+                <img className="avatar-dot" src={getMediaUrl(account.avatar_url, '/images/default-avatar.svg')} alt={account.name} />
                 <div>
                   <strong className={account.role === 'teacher' ? 'teacher-name' : ''}>
                     {account.name}

@@ -114,6 +114,7 @@ export function SettingsProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('theme', theme)
     document.body.classList.toggle('theme-dark', theme === 'dark')
+    document.body.classList.toggle('theme-light', theme === 'light')
   }, [theme])
 
   useEffect(() => {

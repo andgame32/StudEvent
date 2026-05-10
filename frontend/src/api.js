@@ -60,4 +60,9 @@ export function toAbsoluteUrl(url) {
   return new URL(url, base).toString()
 }
 
-// test git
+
+export function getMediaUrl(url, fallback = null) {
+  const absolute = toAbsoluteUrl(url)
+  if (absolute) return absolute
+  return fallback ? toAbsoluteUrl(fallback) : null
+}
