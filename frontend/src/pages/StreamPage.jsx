@@ -10,40 +10,11 @@ export default function StreamPage() {
   const [stream, setStream] = useState(null)
   const [me, setMe] = useState(null)
   const { t } = useSettings()
-
-  useEffect(() => {
-    api(`/streams/${id}`).then(setStream)
-    api('/me').then(setMe).catch(() => setMe(null))
-  }, [id])
-
-  async function endStream() {
-    if (!isHost) return
-    const updated = await api(`/streams/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status: 'ended' }),
-    })
-    setStream(updated)
-  }
-
-  if (!stream) return <p>Загрузка...</p>
+  useEffect(() => { api(`/streams/${id}`).then(setStream); api('/me').then(setMe).catch(() => setMe(null)) }, [id])
+  if (!stream) return <p>{t('loading')}</p>
   const isHost = me?.id === stream.user_id
+  const isEnded = stream.status === 'ended'
+  async function endStream() { if (!isHost) return; const updated = await api(`/streams/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'ended', host_offer: null, viewer_answer: null }) }); setStream(updated) }
 
-  return (
-    <div>
-      <h1>{stream.title}</h1>
-      {stream.preview_url && <img className="stream-preview" src={toAbsoluteUrl(stream.preview_url)} alt={stream.title} />}
-      <div className="row-actions"><button onClick={() => api(`/streams/${id}/react`, {method:'POST', body: JSON.stringify({reaction:'like'})}).then(setStream)}>👍 {stream.likes_count || 0}</button><button onClick={() => api(`/streams/${id}/react`, {method:'POST', body: JSON.stringify({reaction:'dislike'})}).then(setStream)}>👎 {stream.dislikes_count || 0}</button></div>
-      <p>{stream.description}</p>
-      <p>Статус: {stream.status}</p>
-      <p>{stream.status === 'ended' ? t('streamEnded') : isHost ? t('streamStartHint') : t('streamWatchHint')}</p>
-      <VideoPlayer streamId={id} isHost={isHost} isEnded={stream.status === 'ended'} />
-      <Chat streamId={id} />
-      {isHost && (
-        <div className="row-actions">
-          <button className="danger-btn" onClick={endStream}>{t('endStream')}</button>
-          <Link to={`/streams/${id}/edit`}>Редактировать</Link>
-        </div>
-      )}
-    </div>
-  )
+  return <div className="page-card"><h1>{stream.title}</h1>{isEnded && <div className="ended-banner">{t('streamEndedBanner')}</div>}{stream.preview_url && <img className="stream-preview" src={toAbsoluteUrl(stream.preview_url)} alt={stream.title} />}<p>{stream.description}</p><p>{t('status')}: {stream.status}</p><VideoPlayer streamId={id} isHost={isHost} isEnded={isEnded} /><Chat streamId={id} stream={stream} me={me} />{isHost && !isEnded && <div className="row-actions"><button className="danger-btn" onClick={endStream}>{t('endStream')}</button><Link to={`/streams/${id}/edit`}>{t('edit')}</Link></div>}</div>
 }

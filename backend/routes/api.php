@@ -4,6 +4,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\RelatedAccountController;
+use App\Http\Controllers\FriendController;
+use App\Http\Controllers\ModerationController;
 use App\Http\Controllers\StreamController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/streams/{stream}/messages', [ChatController::class, 'store']);
     Route::get('/related-accounts', [RelatedAccountController::class, 'index']);
     Route::post('/related-accounts', [RelatedAccountController::class, 'store']);
+    Route::post('/friends', [FriendController::class, 'store']);
+    Route::post('/streams/{stream}/moderation/block', [ModerationController::class, 'blockUser']);
 
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::put('/admin/users/{user}', [AdminController::class, 'updateUser']);
