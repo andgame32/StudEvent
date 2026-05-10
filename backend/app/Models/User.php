@@ -59,7 +59,7 @@ class User extends Authenticatable
             return null;
         }
 
-        return Storage::url($this->avatar_path);
+        return '/api/media/avatars/'.basename($this->avatar_path);
 
     }
 }

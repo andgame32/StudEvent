@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\RelatedAccountController;
 use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\ModerationController;
 use App\Http\Controllers\StreamController;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::get('/media/{folder}/{path}', [MediaController::class, 'show'])->where('path', '.*');
 
 Route::get('/streams', [StreamController::class, 'index']);
 Route::get('/streams/now', [StreamController::class, 'now']);
