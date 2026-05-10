@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Stream;
+use App\Models\StreamUserBan;
 use Illuminate\Http\Request;
 
 class ChatController extends Controller
@@ -23,7 +24,9 @@ class ChatController extends Controller
     public function store(Request $request, Stream $stream)
     {
         $user = $this->authUser($request);
-        abort_if($user->is_blocked, 403, 'Blocked users cannot chat');
+        abort_if($user->is_blocked, 403, 'Пользователь заблокирован администратором.');
+        $ban = StreamUserBan::where('stream_id', $stream->id)->where('user_id', $user->id)->first();
+        abort_if($ban && (!$ban->blocked_until || $ban->blocked_until->isFuture()), 403, 'Вы временно заблокированы в этом чате.');
         $data = $request->validate(['text' => 'required|string|max:1000']);
 
         $message = $stream->messages()->create([

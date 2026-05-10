@@ -63,6 +63,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'avatar' => 'nullable|image|max:4096',
+            'role' => 'sometimes|required|in:student,teacher,moderator,admin',
         ]);
         $user = $this->authUser($request);
         if ($request->hasFile('avatar')) {
@@ -72,6 +73,9 @@ class AuthController extends Controller
             $data['avatar_path'] = $request->file('avatar')->store('avatars', 'public');
         }
         unset($data['avatar']);
+        if (isset($data['role']) && !in_array($data['role'], ['student', 'teacher'])) {
+            $data['is_admin'] = $data['role'] === 'admin';
+        }
         $user->update($data);
         return response()->json($user->fresh());
     }
