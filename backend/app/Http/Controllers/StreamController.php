@@ -177,7 +177,12 @@ class StreamController extends Controller
     {
         $role = $request->query('role', 'viewer');
         $field = $role === 'host' ? 'host_ice_candidates' : 'viewer_ice_candidates';
+        $candidates = $stream->{$field} ?? [];
 
-        return response()->json(['candidates' => $stream->{$field} ?? []]);
+        if (!empty($candidates)) {
+            $stream->update([$field => []]);
+        }
+
+        return response()->json(['candidates' => $candidates]);
     }
 }
