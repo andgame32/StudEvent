@@ -18,6 +18,10 @@ class ModerationController extends Controller
         $data = $request->validate(['user_id' => 'required|exists:users,id', 'minutes' => 'required|integer|min:1|max:10080']);
         $target = User::findOrFail($data['user_id']);
 
+        if ($moderator->role === 'moderator' && $moderator->institution !== $target->institution) {
+            abort(403, 'Невозможно заблокировать пользователя из другого учреждения.');
+        }
+
         StreamUserBan::updateOrCreate(
             ['stream_id' => $stream->id, 'user_id' => $target->id],
             ['moderator_id' => $moderator->id, 'blocked_until' => now()->addMinutes($data['minutes'])]

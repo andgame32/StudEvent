@@ -8,8 +8,13 @@ class RelatedAccountController extends Controller
 {
     public function index(Request $request)
     {
-        return $this->authUser($request)
+        $user = $this->authUser($request);
+        
+        return $user
             ->relatedAccounts()
+            ->whereHas('user', function ($query) use ($user) {
+                $query->where('institution', $user->institution);
+            })
             ->latest()
             ->limit(3)
             ->get();

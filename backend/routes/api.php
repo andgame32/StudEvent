@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\RelatedAccountController;
+use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\ModerationController;
 use App\Http\Controllers\StreamController;
@@ -36,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/streams/{stream}/messages', [ChatController::class, 'store']);
     Route::get('/related-accounts', [RelatedAccountController::class, 'index']);
     Route::post('/related-accounts', [RelatedAccountController::class, 'store']);
+    Route::get('/institution-users', [InstitutionController::class, 'users']);
     Route::post('/friends', [FriendController::class, 'store']);
     Route::post('/streams/{stream}/moderation/block', [ModerationController::class, 'blockUser']);
 
@@ -45,4 +47,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/users/{user}/unblock', [AdminController::class, 'unblock']);
     Route::post('/admin/streams/{stream}/stop', [AdminController::class, 'stopStream']);
     Route::delete('/admin/messages/{message}', [AdminController::class, 'deleteMessage']);
+    Route::get('/admin/metrics', [AdminController::class, 'metrics']);
 });

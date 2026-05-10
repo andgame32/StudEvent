@@ -9,6 +9,7 @@ const translations = {
     profile: 'Профиль',
     settings: 'Настройки',
     logout: 'Выйти',
+    login: 'Войти',
     institution: 'Ваше учреждение',
     participant: 'Участник',
     liveNow: 'Текущие трансляции:',
@@ -59,6 +60,7 @@ const translations = {
     profile: 'Profile',
     settings: 'Settings',
     logout: 'Logout',
+    login: 'Login',
     institution: 'Your institution',
     participant: 'Participant',
     liveNow: 'Live now:',
@@ -132,3 +134,6 @@ export function SettingsProvider({ children }) {
 export function useSettings() {
   return useContext(SettingsContext)
 }
+
+
+// check

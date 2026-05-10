@@ -68,4 +68,17 @@ class AdminController extends Controller
 
         return response()->json(['message' => 'Message deleted']);
     }
+
+    public function metrics(Request $request): JsonResponse
+    {
+        $this->ensureAdmin($request);
+
+        $total_visits = Stream::count();
+        $total_messages = Message::count();
+
+        return response()->json([
+            'total_visits' => $total_visits,
+            'total_messages' => $total_messages,
+        ]);
+    }
 }

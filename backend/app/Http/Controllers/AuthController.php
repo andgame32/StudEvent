@@ -64,6 +64,7 @@ class AuthController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'avatar' => 'nullable|image|max:4096',
             'role' => 'sometimes|required|in:student,teacher,moderator,admin',
+            'institution' => 'sometimes|nullable|in:ИАТ,ИРГУПС,ПОЛИТЕХ',
         ]);
         $user = $this->authUser($request);
         if ($request->hasFile('avatar')) {
