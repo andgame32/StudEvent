@@ -112,11 +112,26 @@ class StreamController extends Controller
         return response()->json($stream->load('user:id,name,avatar_path,institution'), 201);
     }
 
+    private function streamPayload(Request $request, Stream $stream): Stream
+    {
+        $stream->load(['user:id,name,avatar_path,institution', 'messages.user:id,name,avatar_path']);
+
+        $user = $this->authUser($request);
+        $stream->setAttribute(
+            'current_user_reaction',
+            $stream->reactions()
+                ->where('user_id', $user->id)
+                ->value('reaction')
+        );
+
+        return $stream;
+    }
+
     public function show(Request $request, Stream $stream)
     {
         $this->ensureCanAccessStream($request, $stream);
 
-        return $stream->load(['user:id,name,avatar_path,institution', 'messages.user:id,name,avatar_path']);
+        return $this->streamPayload($request, $stream);
     }
 
     public function update(Request $request, Stream $stream): JsonResponse
@@ -151,7 +166,7 @@ class StreamController extends Controller
 
         $stream->update($data);
 
-        return response()->json($stream->fresh()->load('user:id,name,avatar_path,institution'));
+        return response()->json($this->streamPayload($request, $stream->fresh()));
     }
 
     public function destroy(Request $request, Stream $stream): JsonResponse
@@ -167,6 +182,8 @@ class StreamController extends Controller
 
     public function react(Request $request, Stream $stream): JsonResponse
     {
+        $this->ensureCanAccessStream($request, $stream);
+
         $data = $request->validate(['reaction' => 'required|in:like,dislike']);
 
         StreamReaction::updateOrCreate(
@@ -174,7 +191,7 @@ class StreamController extends Controller
             ['reaction' => $data['reaction']]
         );
 
-        return response()->json($stream->fresh());
+        return response()->json($this->streamPayload($request, $stream->fresh()));
     }
 
     public function saveOffer(Request $request, Stream $stream): JsonResponse

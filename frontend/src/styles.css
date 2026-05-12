@@ -513,3 +513,140 @@ body.theme-dark .admin-user-item {
     grid-template-columns: 1fr;
   }
 }
+
+.mobile-sidebar-toggle,
+.mobile-sidebar-backdrop {
+  display: none;
+}
+
+.stream-page-card {
+  width: 100%;
+}
+
+.stream-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 18px;
+}
+
+.reaction-btn {
+  width: auto;
+  min-width: 150px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  background: #eef0ff;
+  color: #1720ad;
+  border: 1px solid rgba(27, 38, 217, 0.22);
+}
+
+.reaction-btn.active {
+  background: #1b26d9;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(27, 38, 217, 0.22);
+}
+
+.reaction-btn span {
+  font-weight: 700;
+}
+
+body.theme-dark .reaction-btn {
+  background: #1f1f2e;
+  color: #dedeff;
+  border-color: #3d3dff;
+}
+
+body.theme-dark .reaction-btn.active {
+  background: #3d3dff;
+  color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not(.theme-light) .reaction-btn {
+    background: #1f1f2e;
+    color: #dedeff;
+    border-color: #3d3dff;
+  }
+
+  body:not(.theme-light) .reaction-btn.active {
+    background: #3d3dff;
+    color: #fff;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .mobile-sidebar-toggle {
+    display: inline-flex;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1100;
+    width: auto;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 999px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: min(84vw, 320px);
+    max-width: 320px;
+    height: 100vh;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    box-shadow: 18px 0 40px rgba(0, 0, 0, 0.22);
+  }
+
+  .sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .mobile-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background: rgba(0, 0, 0, 0.42);
+  }
+
+  .sidebar-open .mobile-sidebar-backdrop {
+    display: block;
+  }
+
+  .content {
+    max-width: none;
+    padding: 72px 14px 24px;
+  }
+
+  .page-card,
+  .settings-panel,
+  .chat,
+  .auth-form {
+    max-width: 100%;
+    padding: 14px;
+  }
+
+  .stream-reactions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .reaction-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+  }
+}

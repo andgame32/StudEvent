@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import CreateStreamPage from './pages/CreateStreamPage'
@@ -12,11 +13,29 @@ import SettingsPage from './pages/SettingsPage'
 import StreamPage from './pages/StreamPage'
 import StreamsListPage from './pages/StreamsListPage'
 import AdminPage from './pages/AdminPage'
+import { useSettings } from './settings'
 
 function AppLayout({ children }) {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const { t } = useSettings()
+
+  function closeMobileSidebar() {
+    setIsMobileSidebarOpen(false)
+  }
+
   return (
-    <div className="app-shell">
-      <Sidebar />
+    <div className={`app-shell${isMobileSidebarOpen ? ' sidebar-open' : ''}`}>
+      <button
+        className="mobile-sidebar-toggle"
+        type="button"
+        aria-expanded={isMobileSidebarOpen}
+        aria-controls="app-sidebar"
+        onClick={() => setIsMobileSidebarOpen((isOpen) => !isOpen)}
+      >
+        ☰ {t('menu')}
+      </button>
+      <div className="mobile-sidebar-backdrop" onClick={closeMobileSidebar} />
+      <Sidebar onNavigate={closeMobileSidebar} />
       <main className="content">{children}</main>
     </div>
   )
