@@ -5,14 +5,12 @@ import { useSettings } from '../settings'
 export default function ProfilePage() {
   const [user, setUser] = useState(getCurrentUser())
   const [avatar, setAvatar] = useState(null)
-  const [role, setRole] = useState('student')
   const [institution, setInstitution] = useState('ИАТ')
   const { t } = useSettings()
 
   useEffect(() => {
     api('/me').then((d) => {
       setUser(d)
-      setRole(d.role || 'student')
       setInstitution(d.institution || 'ИАТ')
       setCurrentUser(d)
     }).catch(() => setUser(getCurrentUser()))
@@ -22,7 +20,6 @@ export default function ProfilePage() {
     e.preventDefault()
     const fd = new FormData()
     if (avatar) fd.append('avatar', avatar)
-    fd.append('role', role)
     fd.append('institution', institution)
     const updated = await api('/me', { method: 'PUT', body: fd })
     setUser(updated)
@@ -36,15 +33,9 @@ export default function ProfilePage() {
       <h1>{t('profile')}</h1>
       <p>{t('name')}: {user.name}</p>
       <p>Email: {user.email}</p>
+      <p>Роль: {user.role || 'student'}</p>
       <form onSubmit={uploadAvatar}>
         <input type="file" accept="image/*" onChange={(e) => setAvatar(e.target.files?.[0] || null)} />
-        <label>{t('rolePreview')}</label>
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="student">{t('student')}</option>
-          <option value="teacher">{t('teacher')}</option>
-          <option value="moderator">{t('moderator')} (preview)</option>
-          <option value="admin">{t('admin')} (preview)</option>
-        </select>
         <label>Учреждение</label>
         <select value={institution} onChange={(e) => setInstitution(e.target.value)}>
           <option value="ИАТ">ИАТ</option>

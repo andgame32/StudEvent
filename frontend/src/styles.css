@@ -411,3 +411,105 @@ body.theme-dark .user-item {
   padding: 6px 12px;
   margin: 0;
 }
+.admin-page {
+  max-width: 1100px;
+}
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.chart-card {
+  background: #f9f9fb;
+  border: 1px solid #ececf2;
+  border-radius: 12px;
+  padding: 16px;
+}
+body.theme-dark .chart-card {
+  background: #1f1f2e;
+  border-color: #34344e;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 44px;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0;
+}
+.bar-track {
+  height: 12px;
+  background: rgba(27, 38, 217, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: #1b26d9;
+  border-radius: inherit;
+}
+.line-chart {
+  width: 100%;
+  color: #1b26d9;
+  background: linear-gradient(180deg, rgba(27, 38, 217, 0.08), transparent);
+  border-radius: 8px;
+}
+.line-chart circle {
+  fill: #1b26d9;
+}
+.admin-stream-item,
+.admin-user-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: #f9f9fb;
+  border-radius: 8px;
+}
+.admin-user-item {
+  grid-template-columns: minmax(220px, 1fr) 150px 170px auto;
+}
+.admin-stream-item div,
+.admin-user-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-stream-item button,
+.admin-user-item button,
+.admin-user-item select {
+  width: auto;
+}
+.admin-user-item label {
+  font-size: 12px;
+}
+.danger-btn {
+  background: #c62828;
+}
+.secondary-btn {
+  background: #5c6270;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+body.theme-dark .admin-stream-item,
+body.theme-dark .admin-user-item {
+  background: #1f1f2e;
+}
+@media (prefers-color-scheme: dark) {
+  body:not(.theme-light) .chart-card,
+  body:not(.theme-light) .admin-stream-item,
+  body:not(.theme-light) .admin-user-item {
+    background: #1f1f2e;
+    border-color: #34344e;
+  }
+}
+@media (max-width: 900px) {
+  .charts-grid,
+  .admin-user-item,
+  .admin-stream-item {
+    grid-template-columns: 1fr;
+  }
+}

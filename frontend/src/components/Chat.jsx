@@ -8,7 +8,7 @@ export default function Chat({ streamId, stream, me }) {
   const [lastId, setLastId] = useState(0)
   const { t } = useSettings()
 
-  useEffect(() => { const timer = setInterval(async () => { try { const incoming = await api(`/streams/${streamId}/messages?since_id=${lastId}`); if (incoming.length) { setMessages((prev) => [...prev, ...incoming]); setLastId(incoming[incoming.length - 1].id) } } catch {} }, 2000); return () => clearInterval(timer) }, [streamId, lastId])
+  useEffect(() => { const timer = setInterval(async () => { try { const incoming = await api(`/streams/${streamId}/messages?since_id=${lastId}`); if (incoming.length) { setMessages((prev) => [...prev, ...incoming]); setLastId(incoming[incoming.length - 1].id) } } catch { /* polling continues after transient chat errors */ } }, 2000); return () => clearInterval(timer) }, [streamId, lastId])
 
   async function sendMessage(e) { e.preventDefault(); if (!text.trim() || stream?.status === 'ended') return; const created = await api(`/streams/${streamId}/messages`, { method: 'POST', body: JSON.stringify({ text }) }); setMessages((prev) => [...prev, created]); setLastId(created.id); setText('') }
   async function blockUser(userId) { const minutes = Number(prompt(t('blockMinutesPrompt'), '30') || 0); if (!minutes) return; await api(`/streams/${streamId}/moderation/block`, { method: 'POST', body: JSON.stringify({ user_id: userId, minutes }) }) }

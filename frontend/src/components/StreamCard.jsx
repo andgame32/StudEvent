@@ -8,6 +8,7 @@ export default function StreamCard({ stream }) {
       <h3>{stream.title}</h3>
       <p>{stream.description || 'Без описания'}</p>
       <small>{new Date(stream.scheduled_at).toLocaleString()}</small>
+      <small>Учреждение: {stream.institution || stream.user?.institution || 'не указано'}</small>
     </Link>
   )
 }

@@ -17,24 +17,66 @@ class StreamController extends Controller
         $decoded = json_decode($value, true);
         return is_array($decoded) ? $decoded : [];
     }
-    public function index()
+
+    private function ensureCanAccessStream(Request $request, Stream $stream): void
     {
-        return Stream::with('user:id,name,avatar_path')
+        $user = $this->authUser($request);
+
+        if ($user->is_admin || $user->id === $stream->user_id) {
+            return;
+        }
+
+        abort_unless(
+            $stream->institution && $user->institution === $stream->institution,
+            403,
+            'Stream is available only for users from the same institution'
+        );
+    }
+    public function index(Request $request)
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+
+        return Stream::with('user:id,name,avatar_path,institution')
+            ->when(!$user, fn ($query) => $query->whereRaw('1 = 0'))
+            ->when($user && !$user->is_admin, function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('institution', $user->institution)
+                        ->orWhere('user_id', $user->id);
+                });
+            })
             ->orderBy('scheduled_at')
             ->get();
     }
 
-    public function now()
+    public function now(Request $request)
     {
-        return Stream::with('user:id,name,avatar_path')
+        $user = $request->user('sanctum') ?? $request->user();
+
+        return Stream::with('user:id,name,avatar_path,institution')
+            ->when(!$user, fn ($query) => $query->whereRaw('1 = 0'))
+            ->when($user && !$user->is_admin, function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('institution', $user->institution)
+                        ->orWhere('user_id', $user->id);
+                });
+            })
             ->where('status', 'live')
             ->orderByDesc('scheduled_at')
             ->get();
     }
 
-    public function upcoming()
+    public function upcoming(Request $request)
     {
-        return Stream::with('user:id,name,avatar_path')
+        $user = $request->user('sanctum') ?? $request->user();
+
+        return Stream::with('user:id,name,avatar_path,institution')
+            ->when(!$user, fn ($query) => $query->whereRaw('1 = 0'))
+            ->when($user && !$user->is_admin, function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('institution', $user->institution)
+                        ->orWhere('user_id', $user->id);
+                });
+            })
             ->where('status', 'scheduled')
             ->orderBy('scheduled_at')
             ->get();
@@ -63,14 +105,18 @@ class StreamController extends Controller
         }
         unset($data['preview']);
 
+        $data['institution'] = $user->institution;
+
         $stream = $user->streams()->create($data);
 
-        return response()->json($stream->load('user:id,name,avatar_path'), 201);
+        return response()->json($stream->load('user:id,name,avatar_path,institution'), 201);
     }
 
-    public function show(Stream $stream)
+    public function show(Request $request, Stream $stream)
     {
-        return $stream->load(['user:id,name,avatar_path', 'messages.user:id,name,avatar_path']);
+        $this->ensureCanAccessStream($request, $stream);
+
+        return $stream->load(['user:id,name,avatar_path,institution', 'messages.user:id,name,avatar_path']);
     }
 
     public function update(Request $request, Stream $stream): JsonResponse
@@ -96,9 +142,16 @@ class StreamController extends Controller
         }
         unset($data['preview']);
 
+        if (($data['status'] ?? null) === 'ended') {
+            $data['host_offer'] = null;
+            $data['viewer_answer'] = null;
+            $data['host_ice_candidates'] = null;
+            $data['viewer_ice_candidates'] = null;
+        }
+
         $stream->update($data);
 
-        return response()->json($stream->fresh()->load('user:id,name,avatar_path'));
+        return response()->json($stream->fresh()->load('user:id,name,avatar_path,institution'));
     }
 
     public function destroy(Request $request, Stream $stream): JsonResponse
@@ -148,6 +201,7 @@ class StreamController extends Controller
 
     public function getOffer(Request $request, Stream $stream): JsonResponse
     {
+        $this->ensureCanAccessStream($request, $stream);
         $viewerId = (string) $request->query('viewer_id', '');
         $answers = $this->signalMap($stream->host_offer);
         return response()->json(['sdp' => $viewerId ? ($answers[$viewerId] ?? null) : null]);
@@ -155,6 +209,9 @@ class StreamController extends Controller
 
     public function saveAnswer(Request $request, Stream $stream): JsonResponse
     {
+        $this->ensureCanAccessStream($request, $stream);
+        abort_if($stream->status === 'ended', 409, 'Stream has ended');
+
         $data = $request->validate([
             'viewer_id' => 'required|string|max:128',
             'sdp' => 'required|string',
@@ -168,6 +225,7 @@ class StreamController extends Controller
 
     public function getAnswer(Request $request, Stream $stream): JsonResponse
     {
+        $this->ensureCanAccessStream($request, $stream);
         $viewerId = (string) $request->query('viewer_id', '');
         $offers = $this->signalMap($stream->viewer_answer);
         if (!$viewerId) return response()->json(['offers' => $offers]);
@@ -181,6 +239,9 @@ class StreamController extends Controller
 
     public function addCandidate(Request $request, Stream $stream): JsonResponse
     {
+        $this->ensureCanAccessStream($request, $stream);
+        abort_if($stream->status === 'ended', 409, 'Stream has ended');
+
         $data = $request->validate([
             'role' => 'required|in:host,viewer',
             'viewer_id' => 'required|string|max:128',
@@ -204,6 +265,7 @@ class StreamController extends Controller
 
     public function getCandidates(Request $request, Stream $stream): JsonResponse
     {
+        $this->ensureCanAccessStream($request, $stream);
         $role = $request->query('role', 'viewer');
         $viewerId = (string) $request->query('viewer_id', '');
         $field = $role === 'host' ? 'host_ice_candidates' : 'viewer_ice_candidates';

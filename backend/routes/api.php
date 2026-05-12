@@ -46,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::put('/admin/users/{user}', [AdminController::class, 'updateUser']);
+    Route::get('/admin/streams', [AdminController::class, 'streams']);
     Route::post('/admin/users/{user}/block', [AdminController::class, 'block']);
     Route::post('/admin/users/{user}/unblock', [AdminController::class, 'unblock']);
     Route::post('/admin/streams/{stream}/stop', [AdminController::class, 'stopStream']);
