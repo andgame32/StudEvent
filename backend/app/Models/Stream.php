@@ -11,6 +11,7 @@ class Stream extends Model
 {
     protected $fillable = [
         'user_id',
+        'institution',
         'title',
         'description',
         'preview_path',

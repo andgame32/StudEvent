@@ -17,7 +17,7 @@ export default function Sidebar() {
   }, [user])
 
   async function handleLogout() {
-    try { await api('/logout', { method: 'POST' }) } catch {}
+    try { await api('/logout', { method: 'POST' }) } catch { /* local logout should continue */ }
     clearToken()
     clearCurrentUser()
     navigate('/login')

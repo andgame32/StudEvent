@@ -30,7 +30,14 @@ class AdminController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
             'is_admin' => 'sometimes|boolean',
+            'is_blocked' => 'sometimes|boolean',
+            'role' => 'sometimes|required|in:student,teacher,moderator,admin',
+            'institution' => 'sometimes|nullable|in:ИАТ,ИРГУПС,ПОЛИТЕХ',
         ]);
+
+        if (isset($data['role'])) {
+            $data['is_admin'] = $data['role'] === 'admin';
+        }
 
         $user->update($data);
 
@@ -53,12 +60,27 @@ class AdminController extends Controller
         return response()->json(['message' => 'User unblocked']);
     }
 
+    public function streams(Request $request)
+    {
+        $this->ensureAdmin($request);
+
+        return Stream::with('user:id,name,email,institution')
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
     public function stopStream(Request $request, Stream $stream): JsonResponse
     {
         $this->ensureAdmin($request);
-        $stream->update(['status' => 'ended']);
+        $stream->update([
+            'status' => 'ended',
+            'host_offer' => null,
+            'viewer_answer' => null,
+            'host_ice_candidates' => null,
+            'viewer_ice_candidates' => null,
+        ]);
 
-        return response()->json(['message' => 'Stream stopped']);
+        return response()->json($stream->fresh()->load('user:id,name,email,institution'));
     }
 
     public function deleteMessage(Request $request, Message $message): JsonResponse
@@ -73,12 +95,28 @@ class AdminController extends Controller
     {
         $this->ensureAdmin($request);
 
-        $total_visits = Stream::count();
-        $total_messages = Message::count();
+        $streamsByStatus = Stream::selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $usersByRole = User::selectRaw('role, COUNT(*) as total')
+            ->groupBy('role')
+            ->pluck('total', 'role');
+        $messagesByDay = Message::selectRaw('DATE(created_at) as day, COUNT(*) as total')
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->groupBy('day')
+            ->orderBy('day')
+            ->get();
 
         return response()->json([
-            'total_visits' => $total_visits,
-            'total_messages' => $total_messages,
+            'totals' => [
+                'streams' => Stream::count(),
+                'live_streams' => Stream::where('status', 'live')->count(),
+                'messages' => Message::count(),
+                'users' => User::count(),
+            ],
+            'streams_by_status' => $streamsByStatus,
+            'users_by_role' => $usersByRole,
+            'messages_by_day' => $messagesByDay,
         ]);
     }
 }

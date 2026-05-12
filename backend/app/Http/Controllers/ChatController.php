@@ -8,8 +8,25 @@ use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
+    private function ensureCanAccessStream(Request $request, Stream $stream): void
+    {
+        $user = $this->authUser($request);
+
+        if ($user->is_admin || $user->id === $stream->user_id) {
+            return;
+        }
+
+        abort_unless(
+            $stream->institution && $user->institution === $stream->institution,
+            403,
+            'Stream is available only for users from the same institution'
+        );
+    }
+
     public function index(Request $request, Stream $stream)
     {
+        $this->ensureCanAccessStream($request, $stream);
+
         $sinceId = (int) $request->query('since_id', 0);
 
         $messages = $stream->messages()
@@ -23,6 +40,8 @@ class ChatController extends Controller
 
     public function store(Request $request, Stream $stream)
     {
+        $this->ensureCanAccessStream($request, $stream);
+
         $user = $this->authUser($request);
         abort_if($user->is_blocked, 403, 'Пользователь заблокирован администратором.');
         $ban = StreamUserBan::where('stream_id', $stream->id)->where('user_id', $user->id)->first();
