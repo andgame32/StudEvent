@@ -50,7 +50,12 @@ const translations = {
     teacher: 'Преподаватель',
     moderator: 'Модератор',
     save: 'Сохранить',
-    streamStartError: 'Ошибка запуска трансляции'
+    streamStartError: 'Ошибка запуска трансляции',
+    reactions: 'Реакции',
+    like: 'Нравится',
+    dislike: 'Не нравится',
+    loginToReact: 'Войдите, чтобы оставить реакцию.',
+    menu: 'Меню'
   },
   en: {
     home: 'Home',
@@ -101,7 +106,12 @@ const translations = {
     teacher: 'teacher',
     moderator: 'moderator',
     save: 'save',
-    streamStartError: 'streamStartError'
+    streamStartError: 'streamStartError',
+    reactions: 'Reactions',
+    like: 'Like',
+    dislike: 'Dislike',
+    loginToReact: 'Log in to react.',
+    menu: 'Menu'
   },
 }
 

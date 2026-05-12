@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api, clearCurrentUser, clearToken, getCurrentUser, getMediaUrl, setCurrentUser } from '../api'
 import { useSettings } from '../settings'
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }) {
   const navigate = useNavigate()
   const [accounts, setAccounts] = useState([])
   const [user, setUser] = useState(getCurrentUser())
@@ -21,10 +21,12 @@ export default function Sidebar() {
     clearToken()
     clearCurrentUser()
     navigate('/login')
+    onNavigate?.()
   }
 
   function handleLogin() {
     navigate('/login')
+    onNavigate?.()
   }
 
   function toggleTheme() {
@@ -34,7 +36,7 @@ export default function Sidebar() {
   const sorted = [...accounts].sort((a, b) => (b.role === 'teacher') - (a.role === 'teacher'))
   
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" id="app-sidebar">
       <div className="sidebar-header">
         <div className="logo"><span>Stud</span>Event</div>
         <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>
@@ -79,13 +81,13 @@ export default function Sidebar() {
       )}
 
       <nav className="sidebar-nav">
-        <Link to="/">{t('home')}</Link>
-        <Link to="/streams">{t('allStreams')}</Link>
-        {user && <Link to="/my-streams">{t('myStreams')}</Link>}
-        {user && <Link className="sidebar-link-wide" to="/streams/create">{t('createStream')}</Link>}
-        {user && <Link to="/profile">{t('profile')}</Link>}
-        {user && <Link to="/settings">{t('settings')}</Link>}
-        {user?.is_admin && <Link to="/admin">{t('admin')}</Link>}
+        <Link to="/" onClick={onNavigate}>{t('home')}</Link>
+        <Link to="/streams" onClick={onNavigate}>{t('allStreams')}</Link>
+        {user && <Link to="/my-streams" onClick={onNavigate}>{t('myStreams')}</Link>}
+        {user && <Link className="sidebar-link-wide" to="/streams/create" onClick={onNavigate}>{t('createStream')}</Link>}
+        {user && <Link to="/profile" onClick={onNavigate}>{t('profile')}</Link>}
+        {user && <Link to="/settings" onClick={onNavigate}>{t('settings')}</Link>}
+        {user?.is_admin && <Link to="/admin" onClick={onNavigate}>{t('admin')}</Link>}
       </nav>
 
       <button className="logout-btn" onClick={user ? handleLogout : handleLogin}>

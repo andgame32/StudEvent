@@ -10,6 +10,8 @@ export default function StreamPage() {
   const [stream, setStream] = useState(null)
   const [me, setMe] = useState(null)
   const [error, setError] = useState('')
+  const [reactionError, setReactionError] = useState('')
+  const [reactionLoading, setReactionLoading] = useState('')
   const { t } = useSettings()
 
   useEffect(() => {
@@ -55,5 +57,62 @@ export default function StreamPage() {
     setStream(updated)
   }
 
-  return <div className="page-card"><h1>{stream.title}</h1>{isEnded && <div className="ended-banner">{t('streamEndedBanner')}</div>}<p>{stream.description}</p><p>{t('status')}: {stream.status}</p><p>Учреждение: {stream.institution || stream.user?.institution || 'не указано'}</p><VideoPlayer streamId={id} isHost={isHost} isEnded={isEnded} onEnded={setStream} /><Chat streamId={id} stream={stream} me={me} />{isHost && !isEnded && <div className="row-actions"><button className="danger-btn" onClick={endStream}>{t('endStream')}</button><Link to={`/streams/${id}/edit`}>{t('edit')}</Link></div>}</div>
+  async function react(reaction) {
+    if (!me) {
+      setReactionError(t('loginToReact'))
+      return
+    }
+
+    setReactionLoading(reaction)
+    setReactionError('')
+
+    try {
+      const updated = await api(`/streams/${id}/react`, {
+        method: 'POST',
+        body: JSON.stringify({ reaction }),
+      })
+      setStream(updated)
+    } catch (e) {
+      setReactionError(e.message)
+    } finally {
+      setReactionLoading('')
+    }
+  }
+
+  return (
+    <div className="page-card stream-page-card">
+      <h1>{stream.title}</h1>
+      {isEnded && <div className="ended-banner">{t('streamEndedBanner')}</div>}
+      <p>{stream.description}</p>
+      <p>{t('status')}: {stream.status}</p>
+      <p>Учреждение: {stream.institution || stream.user?.institution || 'не указано'}</p>
+      <VideoPlayer streamId={id} isHost={isHost} isEnded={isEnded} onEnded={setStream} />
+      <section className="stream-reactions" aria-label={t('reactions')}>
+        <button
+          className={`reaction-btn${stream.current_user_reaction === 'like' ? ' active' : ''}`}
+          type="button"
+          onClick={() => react('like')}
+          disabled={reactionLoading === 'like'}
+        >
+          👍 {t('like')} <span>{stream.likes_count ?? 0}</span>
+        </button>
+        <button
+          className={`reaction-btn${stream.current_user_reaction === 'dislike' ? ' active' : ''}`}
+          type="button"
+          onClick={() => react('dislike')}
+          disabled={reactionLoading === 'dislike'}
+        >
+          👎 {t('dislike')} <span>{stream.dislikes_count ?? 0}</span>
+        </button>
+      </section>
+      {reactionError && <p className="error-text">{reactionError}</p>}
+      <Chat streamId={id} stream={stream} me={me} />
+      {isHost && !isEnded && (
+        <div className="row-actions">
+          <button className="danger-btn" onClick={endStream}>{t('endStream')}</button>
+          <Link to={`/streams/${id}/edit`}>{t('edit')}</Link>
+        </div>
+      )}
+    </div>
+  )
 }
